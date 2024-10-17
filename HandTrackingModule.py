@@ -33,6 +33,8 @@ class handDetector():
 		self.tipIds = [4, 8, 12, 16, 20] 
 		self.results = None
 		self.lmList = []
+  
+		self.pTime = 0
 
 	def findHands(self, img, draw=True):
 		imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -94,9 +96,13 @@ class handDetector():
 				fingers.append(0)
 		return fingers
 
+	def drawFPS(self, img):
+		cTime = time.time()
+		cv2.putText(img, str(int(1 / (cTime - self.pTime))), (10,70), cv2.FONT_HERSHEY_PLAIN, 3, (255,0,255), 3)
+		self.pTime = cTime
+     
+
 def demo():
-	pTime = 0
-	cTime = 0
 	cap = cv2.VideoCapture(0)
 	detector = handDetector()
 	while True:
@@ -105,11 +111,7 @@ def demo():
 		detector.findPosition(img)
 		# print(bbox)
 
-		cTime = time.time()
-		fps = 1. / (cTime - pTime)
-		pTime = cTime
-
-		cv2.putText(img, str(int(fps)), (10,70), cv2.FONT_HERSHEY_PLAIN, 3, (255,0,255), 3)
+		detector.drawFPS(img)
 
 		cv2.imshow("Image", img)
 		cv2.waitKey(1)
