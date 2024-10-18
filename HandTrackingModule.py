@@ -5,7 +5,6 @@ import math
 
 # TODO: Вынести отрисовку в отдельный метод
 # TODO: Добавить адекватные логи
-# TODO: Добавить нормальные конфиги
 
 class handDetector():
 	def __init__(self, mode=False, maxHands=2, modelComplexity=1, detectionCon=0.5, trackCon=0.5):
@@ -35,6 +34,23 @@ class handDetector():
 		self.lmList = []
   
 		self.pTime = 0
+  
+		self.fps = {
+			"org": (10, 70),
+			"font": cv2.FONT_HERSHEY_PLAIN,
+			"scale": 3,
+			"color": (255, 0, 255),
+			"bold": 3
+		}
+		self.rectangle = {
+			"color": (0, 255, 0),
+			"bold": 2
+		}
+		self.circle = {
+			"radius": 5,
+			"color": (255, 0, 255),
+			"bold": cv2.FILLED
+		}
 
 	def findHands(self, img, draw=True):
 		imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -59,10 +75,10 @@ class handDetector():
 				#print(id, cx, cy)
 				self.lmList.append([id, cx, cy])
 				if draw and id in self.tipIds:
-					cv2.circle(img, (cx, cy), 5, (255,0,255), cv2.FILLED)
+					cv2.circle(img, (cx, cy), self.circle['radius'], self.circle['color'], self.circle['bold'])
 			xmin, xmax, ymin, ymax = min(xList), max(xList), min(yList), max(yList)
 			if draw:
-				cv2.rectangle(img, (xmin-20, ymin-20), (xmax+20, ymax+20), (0, 255, 0), 2)
+				cv2.rectangle(img, (xmin-20, ymin-20), (xmax+20, ymax+20), self.rectangle['color'], self.rectangle['bold'])
 		return xmin, ymin, xmax, ymax
 
 	def findDistance(self, p1, p2, img, draw=True):
@@ -98,7 +114,7 @@ class handDetector():
 
 	def drawFPS(self, img):
 		cTime = time.time()
-		cv2.putText(img, str(int(1 / (cTime - self.pTime))), (10,70), cv2.FONT_HERSHEY_PLAIN, 3, (255,0,255), 3)
+		cv2.putText(img, str(int(1 / (cTime - self.pTime))), self.fps["org"], self.fps['font'], self.fps['scale'], self.fps['color'], self.fps['bold'])
 		self.pTime = cTime
      
 
