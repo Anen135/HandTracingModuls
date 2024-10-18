@@ -3,7 +3,6 @@ import mediapipe as mp
 import time
 import math
 
-# TODO: Вынести отрисовку в отдельный метод
 # TODO: Добавить адекватные логи
 
 class handDetector():
@@ -37,7 +36,7 @@ class handDetector():
   
 		self.fps = {
 			"org": (10, 70),
-			"font": cv2.FONT_HERSHEY_PLAIN,
+			"font": 1, # FONT_HERSHEY_PLAIN
 			"scale": 3,
 			"color": (255, 0, 255),
 			"bold": 3
@@ -49,11 +48,11 @@ class handDetector():
 		self.circle = {
 			"radius": 5,
 			"color": (255, 0, 255),
-			"bold": cv2.FILLED
+			"bold": -1 # FILLED
 		}
 
 	def findHands(self, img, draw=True):
-		imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+		imgRGB = cv2.cvtColor(img, 4) # BGR -> RGB
 		self.results = self.hands.process(imgRGB)
 		# print(self.results.multi_hand_landmarks)
 
@@ -116,6 +115,9 @@ class handDetector():
 		cTime = time.time()
 		cv2.putText(img, str(int(1 / (cTime - self.pTime))), self.fps["org"], self.fps['font'], self.fps['scale'], self.fps['color'], self.fps['bold'])
 		self.pTime = cTime
+	
+	def drawRectangle(self, img, xmin, ymin, xmax, ymax):
+		cv2.rectangle(img, (xmin-20, ymin-20), (xmax+20, ymax+20), self.rectangle['color'], self.rectangle['bold'])
      
 
 def demo():
