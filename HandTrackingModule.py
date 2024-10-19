@@ -62,6 +62,7 @@ class handDetector():
 	def findPosition(self, img, handNo=0, draw=True):
 		xList = []
 		yList = []
+		self.lmList = []
 		xmin = xmax = ymin = ymax = 0
 		if self.results.multi_hand_landmarks:
 			myHand = self.results.multi_hand_landmarks[handNo]
@@ -80,32 +81,32 @@ class handDetector():
 				cv2.rectangle(img, (xmin-20, ymin-20), (xmax+20, ymax+20), self.rectangle['color'], self.rectangle['bold'])
 		return xmin, ymin, xmax, ymax
 
-	def findDistance(self, p1, p2, img, draw=True):
+	def findDistance(self, p1, p2, img, draw=True, colorC=(255,0,255), colorL=(255,0,255)):
 		x1, y1 = self.lmList[p1][1], self.lmList[p1][2]
 		x2, y2 = self.lmList[p2][1], self.lmList[p2][2]
 		cx, cy = (x1+x2)//2, (y1+y2)//2
-
-		if draw:
-			cv2.circle(img, (x1,y1), 15, (255,0,255), cv2.FILLED)
-			cv2.circle(img, (x2,y2), 15, (255,0,255), cv2.FILLED)
-			cv2.line(img, (x1,y1), (x2,y2), (255,0,255), 3)
-			cv2.circle(img, (cx,cy), 15, (255,0,255), cv2.FILLED)
-
 		length = math.hypot(x2-x1, y2-y1)
-		return length, img, [x1, y1, x2, y2, cx, cy]
+		if draw:
+			referenceLine = int(length//25)
+			cv2.line(img, (x1,y1), (x2,y2), colorL, 2)
+			cv2.circle(img, (x1,y1), referenceLine, colorC, cv2.FILLED)
+			cv2.circle(img, (x2,y2), referenceLine // 16, colorC, cv2.FILLED)
+			cv2.circle(img, (cx,cy), referenceLine, colorC, cv2.FILLED)
+		return length, [x1, y1, x2, y2, cx, cy]
 
-	def fingersUp(self):
+	def fingersUp(self, img) -> list:
 		fingers = []
+		Reference = self.findDistance(5, 0, img, colorL=(255, 255, 255), colorC=(0,0,255))[0]
 		
 		# Thumb
-		if self.lmList[self.tipIds[0]][1] < self.lmList[self.tipIds[0]-1][1]:
+		if self.findDistance(4, 17, img)[0] > Reference/1.3:
 			fingers.append(1)
 		else:
 			fingers.append(0)
 
 		# 4 Fingers
 		for id in range(1,5):
-			if self.lmList[self.tipIds[id]][2] < self.lmList[self.tipIds[id]-2][2]:
+			if self.findDistance(self.tipIds[id], 0, img)[0] > Reference/0.75:
 				fingers.append(1) # TODO: Просто преобразуй булевое значение в int
 			else:
 				fingers.append(0)
