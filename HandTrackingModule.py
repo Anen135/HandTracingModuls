@@ -2,6 +2,7 @@ import cv2
 import mediapipe as mp
 import time
 import math
+from config import fps, rectangle, distance
 
 # TODO: Добавить адекватные логи
 
@@ -19,122 +20,89 @@ class handDetector():
 		Returns:
 		    None
 		"""
+		self.mpHands = mp.solutions.hands
+		self.mpDraw = mp.solutions.drawing_utils
+		self.mpDrawingStyles = mp.solutions.drawing_styles
+
 		self.mode = mode
 		self.maxHands = maxHands
 		self.modelComplexity = modelComplexity
 		self.detectionCon = detectionCon
 		self.trackCon = trackCon
 
-		self.mpHands = mp.solutions.hands
+		self.results = None
 		self.hands = self.mpHands.Hands(self.mode, self.maxHands, self.modelComplexity, self.detectionCon, self.trackCon)
-		self.mpDraw = mp.solutions.drawing_utils
 		self.tipIds = [4, 8, 12, 16, 20] 
 		self.results = None
 		self.lmList = []
-  
 		self.pTime = 0
-  
-		self.fps = {
-			"org": (10, 70),
-			"font": 1, # FONT_HERSHEY_PLAIN
-			"scale": 3,
-			"color": (255, 0, 255),
-			"bold": 3
-		}
-		self.rectangle = {
-			"color": (0, 255, 0),
-			"bold": 2
-		}
-		self.circle = {
-			"radius": 5,
-			"color": (255, 0, 255),
-			"bold": -1 # FILLED
-		}
 
-	def findHands(self, img, draw=True):
-		imgRGB = cv2.cvtColor(img, 4) # BGR -> RGB
-		self.results = self.hands.process(imgRGB)
+	def findHands(self, img):
+		self.results = self.hands.process(cv2.cvtColor(img, 4)) # BGR -> RGB and get the results
 		# print(self.results.multi_hand_landmarks)
-
-		if draw and self.results.multi_hand_landmarks:
-			for handLms in self.results.multi_hand_landmarks: self.mpDraw.draw_landmarks(img, handLms, self.mpHands.HAND_CONNECTIONS)
-
-	def findPosition(self, img, handNo=0, draw=True):
-		xList = []
-		yList = []
+	def findPosition(self, img, handNo=0):
 		self.lmList = []
-		xmin = xmax = ymin = ymax = 0
 		if self.results.multi_hand_landmarks:
+			xList = []
+			yList = []
 			myHand = self.results.multi_hand_landmarks[handNo]
+			#print(id, lm)
+			h, w, c = img.shape
 			for id, lm in enumerate(myHand.landmark):
-				#print(id, lm)
-				h, w, c = img.shape
 				cx, cy = int(lm.x*w), int(lm.y*h)
 				xList.append(cx)
 				yList.append(cy)
 				#print(id, cx, cy)
 				self.lmList.append([id, cx, cy])
-				if draw and id in self.tipIds:
-					cv2.circle(img, (cx, cy), self.circle['radius'], self.circle['color'], self.circle['bold'])
 			xmin, xmax, ymin, ymax = min(xList), max(xList), min(yList), max(yList)
-			if draw:
-				cv2.rectangle(img, (xmin-20, ymin-20), (xmax+20, ymax+20), self.rectangle['color'], self.rectangle['bold'])
-		return xmin, ymin, xmax, ymax
+			return xmin, ymin, xmax, ymax
+		else:
+			return None
 
-	def findDistance(self, p1, p2, img, draw=True, colorC=(255,0,255), colorL=(255,0,255)):
+	def findDistance(self, p1, p2, img, draw=distance['draw'], colorC=distance['circle']['color'], colorL=distance['line']['color']):
 		x1, y1 = self.lmList[p1][1], self.lmList[p1][2]
 		x2, y2 = self.lmList[p2][1], self.lmList[p2][2]
 		cx, cy = (x1+x2)//2, (y1+y2)//2
 		length = math.hypot(x2-x1, y2-y1)
-		if draw:
-			referenceLine = int(length//25)
-			cv2.line(img, (x1,y1), (x2,y2), colorL, 2)
-			cv2.circle(img, (x1,y1), referenceLine, colorC, cv2.FILLED)
-			cv2.circle(img, (x2,y2), referenceLine // 16, colorC, cv2.FILLED)
-			cv2.circle(img, (cx,cy), referenceLine, colorC, cv2.FILLED)
+		if draw: self.drawDistance(img, length, [x1, y1, x2, y2, cx, cy], colorC, colorL)
 		return length, [x1, y1, x2, y2, cx, cy]
+	
 
-	def fingersUp(self, img) -> list:
-		fingers = []
-		Reference = self.findDistance(5, 0, img, colorL=(255, 255, 255), colorC=(0,0,255))[0]
-		
-		# Thumb
-		if self.findDistance(4, 17, img)[0] > Reference/1.3:
-			fingers.append(1)
-		else:
-			fingers.append(0)
 
-		# 4 Fingers
-		for id in range(1,5):
-			if self.findDistance(self.tipIds[id], 0, img)[0] > Reference/0.75:
-				fingers.append(1) # TODO: Просто преобразуй булевое значение в int
-			else:
-				fingers.append(0)
-		return fingers
-
+	def drawDistance(self, img, length, positions, colorC, colorL):
+		referenceLine = int(length//25)
+		cv2.line(img, (positions[0],positions[1]), (positions[2],positions[3]), colorL, distance['line']['bold'])
+		cv2.circle(img, (positions[0],positions[1]), referenceLine, colorC, distance['circle']['bold'])
+		cv2.circle(img, (positions[2],positions[3]), referenceLine // 16, colorC, distance['circle']['bold'])
+		cv2.circle(img, (positions[4],positions[5]), referenceLine, colorC, distance['circle']['bold'])
 	def drawFPS(self, img):
 		cTime = time.time()
-		cv2.putText(img, str(int(1 / (cTime - self.pTime))), self.fps["org"], self.fps['font'], self.fps['scale'], self.fps['color'], self.fps['bold'])
+		cv2.putText(img, str(int(1 / (cTime - self.pTime))), fps["org"], fps['font'], fps['scale'], fps['color'], fps['bold'])
 		self.pTime = cTime
-	
-	def drawRectangle(self, img, xmin, ymin, xmax, ymax):
-		cv2.rectangle(img, (xmin-20, ymin-20), (xmax+20, ymax+20), self.rectangle['color'], self.rectangle['bold'])
+	def drawRectangle(self, img, position):
+		xmin, ymin, xmax, ymax = position
+		cv2.rectangle(img, (xmin-20, ymin-20), (xmax+20, ymax+20), rectangle['color'], rectangle['bold'])
+	def drawHandMarks(self, img):
+		if self.results.multi_hand_landmarks:
+			for landmark in self.results.multi_hand_landmarks:
+				self.mpDraw.draw_landmarks(img, landmark, self.mpHands.HAND_CONNECTIONS, self.mpDrawingStyles.get_default_hand_landmarks_style(), self.mpDrawingStyles.get_default_hand_connections_style())
      
 
-def demo():
+def demo(detector):
 	cap = cv2.VideoCapture(0)
-	detector = handDetector()
 	while True:
 		img = cap.read()[1]
 		detector.findHands(img)
-		detector.findPosition(img)
+		if pos := detector.findPosition(img): detector.drawRectangle(img, pos)
+		detector.drawHandMarks(img)
 		# print(bbox)
 
 		detector.drawFPS(img)
 
 		cv2.imshow("Image", img)
 		cv2.waitKey(1)
+	cap.release()
 
 
 if __name__ == "__main__":
-	demo()
+	demo(handDetector())
