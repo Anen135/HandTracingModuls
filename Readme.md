@@ -1,6 +1,9 @@
-HandTrackingModule.py - Используйте как основу для своих проектов.
-FingerCounterModule.py - Модуль для подсчёта пальцев, можете встраивать в свои как сторонний модуль.
-SerialControllerModule.py - Модуль для передачи количества поднятых пальцев по COM порту.
+# HandTrackingModule.py 
+  Используйте как основу для своих проектов.
+# FingerCounterModule.py 
+  Модуль для подсчёта пальцев, можете встраивать в свои как сторонний модуль.\
+# SerialControllerModule.py
+  Модуль для передачи количества поднятых пальцев по COM порту.\
 
 cv::VideoCaptureProperties {\
   cv::CAP_PROP_POS_MSEC =0,\
