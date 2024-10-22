@@ -1,12 +1,17 @@
 import cv2
 import os
+import sys
 import HandTrackingModule as htm
 from config import distance
 #img должно быть внутри detector
 
 class FingerCounterModule:
     def __init__(self, detector):
-        self.overlayList = [cv2.imread(f'fingers/{imgPath}') for imgPath in os.listdir("fingers")]
+        if hasattr(sys, "_MEIPASS"):  # PyInstaller создает временную директорию при сборке
+            folder_path = os.path.join(sys._MEIPASS, 'fingers')
+        else:
+            folder_path = 'fingers'  # Для обычного запуска из Python
+        self.overlayList = [cv2.imread(os.path.join(folder_path, imgPath)) for imgPath in os.listdir(folder_path)]
         self.detector = detector
         self.totalFingers = 0
     
@@ -32,6 +37,7 @@ def demo(app):
     cap = cv2.VideoCapture(0)
     cap.set(3, 640) # width
     cap.set(4, 480) # height
+    print('Press "q" to quit')
     while True:
         img = cap.read()[1] # Reading the image
         img = cv2.flip(img, 1) # Mirroring the image
@@ -45,7 +51,11 @@ def demo(app):
         app.detector.drawFPS(img)             
         # Display the image with the title "Finger Counter" followed by the total number of fingers counted
         cv2.imshow("IMG", img) 
-        cv2.waitKey(1)
+        # If the window is closed, break the loop
+        if cv2.waitKey(1) & 0xFF in [27, 113, 233, 81]:
+            break   
+    cap.release()  
+    cv2.destroyAllWindows()  
         
 if __name__ == "__main__":
     demo(FingerCounterModule(htm.handDetector(detectionCon=0.75, maxHands=1)))

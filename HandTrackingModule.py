@@ -66,7 +66,6 @@ class handDetector():
 		length = math.hypot(x2-x1, y2-y1)
 		if draw: self.drawDistance(img, length, [x1, y1, x2, y2, cx, cy], colorC, colorL)
 		return length, [x1, y1, x2, y2, cx, cy]
-	
 
 
 	def drawDistance(self, img, length, positions, colorC, colorL):
@@ -86,7 +85,7 @@ class handDetector():
 		if self.results.multi_hand_landmarks:
 			for landmark in self.results.multi_hand_landmarks:
 				self.mpDraw.draw_landmarks(img, landmark, self.mpHands.HAND_CONNECTIONS, self.mpDrawingStyles.get_default_hand_landmarks_style(), self.mpDrawingStyles.get_default_hand_connections_style())
-     
+    
 
 def demo(detector):
 	cap = cv2.VideoCapture(0)
@@ -100,8 +99,10 @@ def demo(detector):
 		detector.drawFPS(img)
 
 		cv2.imshow("Image", img)
-		cv2.waitKey(1)
+		if cv2.waitKey(1) & 0xFF in [27, 113, 233, 81]:
+			break  
 	cap.release()
+	cv2.destroyAllWindows()
 
 
 if __name__ == "__main__":
